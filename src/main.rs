@@ -10,6 +10,11 @@ struct Person {
     history:  RefCell<Vec<Rc<String>>>,
     deputy: RefCell<Option<Rc<Person>>>,
 }
+#[derive(Debug)]
+struct Team {
+    _id: String,
+    members: RefCell<Vec<Rc<Person>>>,
+}
 
 impl Person {
     pub fn new(metier: &str, age: i32, deputy: Option<Rc<Person>>) -> Person {
@@ -36,6 +41,27 @@ impl Person {
     }
 }
 
+impl Team {
+    pub fn new() -> Team {
+        Team {
+            _id: Uuid::new_v4().to_string(),
+            members: RefCell::new(vec!()),
+        }
+    }
+    fn print_team(&self) {
+        println!("{:?}", self);
+    }
+    fn add_member(&self, member: Rc<Person>) {
+        for m in self.members.borrow().iter() {
+            if m._id == member._id {
+                //already team member -> exit and don't add again
+                return
+            }
+        }
+        self.members.borrow_mut().push(member);
+    }
+}
+
 fn _some_func(person: Rc<Person>) {
     println!("{:?}", person);
 }
@@ -47,9 +73,16 @@ fn main() {
     let p = Rc::new( Person::new (
        "writer", 33, Some(Rc::clone(&d))
     ));
+    let team = Team::new();
+    team.add_member(Rc::clone(&d));
+    team.add_member(Rc::clone(&p));
+    //Trying to add an already existing member
+    team.add_member(Rc::clone(&d));
     d.print_person();
     p.set_metier("programmer");
     p.set_age(44);
     p.set_metier("cyclist");
     p.print_person();
+    println!("");
+    team.print_team();
 }
