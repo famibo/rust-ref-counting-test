@@ -7,16 +7,18 @@ struct Person {
     _id: String,
     metier: RefCell<Rc<String>>,
     age: Cell<i32>,
-    history:  RefCell<Vec<Rc<String>>>
+    history:  RefCell<Vec<Rc<String>>>,
+    deputy: RefCell<Option<Rc<Person>>>,
 }
 
 impl Person {
-    pub fn new(metier: &str, age: i32) -> Person {
+    pub fn new(metier: &str, age: i32, deputy: Option<Rc<Person>>) -> Person {
         Person {
             _id: Uuid::new_v4().to_string(),
             metier: RefCell::new(Rc::new(metier.to_string())),
             age: Cell::new(age),
-            history: RefCell::new(vec!())
+            history: RefCell::new(vec!()),
+            deputy: RefCell::new(deputy)
         }
     }
     fn print_person(&self) {
@@ -29,6 +31,9 @@ impl Person {
     fn set_age(&self, age: i32) {
         self.age.set(age);
     }
+    fn set_deputy(&self, deputy: Rc<Person>) {
+        *self.deputy.borrow_mut() = Option::Some(deputy);
+    }
 }
 
 fn _some_func(person: Rc<Person>) {
@@ -36,14 +41,15 @@ fn _some_func(person: Rc<Person>) {
 }
 
 fn main() {
-   let p = Rc::new( Person::new (
-       "writer", 33
+    let d = Rc::new( Person::new (
+        "boss", 60, None
     ));
-    p.print_person();
+    let p = Rc::new( Person::new (
+       "writer", 33, Some(Rc::clone(&d))
+    ));
+    d.print_person();
     p.set_metier("programmer");
     p.set_age(44);
-    p.print_person();
     p.set_metier("cyclist");
-    p.set_age(96);
     p.print_person();
 }
