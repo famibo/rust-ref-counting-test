@@ -1,5 +1,5 @@
 use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -9,10 +9,12 @@ struct Person {
     age: Cell<i32>,
     history:  RefCell<Vec<Rc<String>>>,
     deputy: RefCell<Option<Rc<Person>>>,
+    team: RefCell<Option<Weak<Team>>>,
 }
 #[derive(Debug)]
 struct Team {
     _id: String,
+    name: String,
     members: RefCell<Vec<Rc<Person>>>,
 }
 
@@ -23,11 +25,12 @@ impl Person {
             metier: RefCell::new(Rc::new(metier.to_string())),
             age: Cell::new(age),
             history: RefCell::new(vec!()),
-            deputy: RefCell::new(deputy)
+            deputy: RefCell::new(deputy),
+            team: RefCell::new(Option::None),
         }
     }
     fn print_person(&self) {
-        println!("{:?}", self);
+        println!("{:?} from TEAM: {}", self, self.team.borrow().as_ref().unwrap().upgrade().unwrap().name);
     }
     fn set_metier(&self, metier: &str) {
         self.history.borrow_mut().push(Rc::clone(&self.metier.borrow()));
@@ -42,22 +45,25 @@ impl Person {
 }
 
 impl Team {
-    pub fn new() -> Team {
+    pub fn new(name: &str) -> Team {
         Team {
             _id: Uuid::new_v4().to_string(),
+            name: name.to_string(),
             members: RefCell::new(vec!()),
         }
     }
     fn print_team(&self) {
         println!("{:?}", self);
     }
-    fn add_member(&self, member: Rc<Person>) {
+    //https://stackoverflow.com/questions/73375477/why-cant-refcell-be-used-as-a-self-parameter
+    fn add_member(self: &Rc<Self>, member: Rc<Person>) {
         for m in self.members.borrow().iter() {
             if m._id == member._id {
                 //already team member -> exit and don't add again
                 return
             }
         }
+        *member.team.borrow_mut() = Option::Some(Rc::downgrade(self));
         self.members.borrow_mut().push(member);
     }
 }
@@ -73,7 +79,7 @@ fn main() {
     let p = Rc::new( Person::new (
        "writer", 33, Some(Rc::clone(&d))
     ));
-    let team = Team::new();
+    let team = Rc::new(Team::new("buddies"));
     team.add_member(Rc::clone(&d));
     team.add_member(Rc::clone(&p));
     //Trying to add an already existing member
