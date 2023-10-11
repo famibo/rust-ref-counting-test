@@ -6,7 +6,7 @@ use uuid::Uuid;
 struct Member {
     _id: String,
     name: String,
-    team: RefCell<Option<Weak<Team>>>,
+    team: RefCell<Weak<Team>>,
 }
 #[derive(Debug)]
 struct Team {
@@ -19,14 +19,21 @@ impl Member {
         Member {
             _id: Uuid::new_v4().to_string(),
             name: name.to_string(),
-            team: RefCell::new(Option::None),
+            team: RefCell::new(Weak::new()),
         }
     }
     fn print(&self) {
-        println!("{:?} from team {}", self, self.team.borrow().as_ref().unwrap().upgrade().unwrap().name);
+        println!("{:?} from team {}", self, self.team.borrow().upgrade().unwrap_or(Team::default()).name);
     }
 }
 impl Team {
+    pub fn default() -> Rc<Team> {
+        Rc::new(Team {
+            _id: "?".to_string(),
+            name: "?".to_string(),
+            members: RefCell::new(vec!()),
+        })
+    }
     pub fn new(name: &str) -> Team {
         Team {
             _id: Uuid::new_v4().to_string(),
@@ -45,7 +52,7 @@ impl Team {
                 return
             }
         }
-        *member.team.borrow_mut() = Option::Some(Rc::downgrade(self));
+        *member.team.borrow_mut() = Rc::downgrade(self);
         self.members.borrow_mut().push(member);
     }
 }
