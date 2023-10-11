@@ -7,9 +7,9 @@ struct Person {
     _id: String,
     metier: RefCell<Rc<String>>,
     age: Cell<i32>,
-    history:  RefCell<Vec<Rc<String>>>,
+    history: RefCell<Vec<Rc<String>>>,
     deputy: RefCell<Option<Rc<Person>>>,
-    team: RefCell<Option<Weak<Team>>>,
+    team: RefCell<Weak<Team>>,
 }
 #[derive(Debug)]
 struct Team {
@@ -26,11 +26,11 @@ impl Person {
             age: Cell::new(age),
             history: RefCell::new(vec!()),
             deputy: RefCell::new(deputy),
-            team: RefCell::new(Option::None),
+            team: RefCell::new(Weak::new()),
         }
     }
     fn print_person(&self) {
-        println!("{:?} from TEAM: {}", self, self.team.borrow().as_ref().unwrap().upgrade().unwrap().name);
+        println!("{:?} from team {}", self, self.team.borrow().upgrade().unwrap_or(Team::default()).name);
     }
     fn set_metier(&self, metier: &str) {
         self.history.borrow_mut().push(Rc::clone(&self.metier.borrow()));
@@ -45,6 +45,13 @@ impl Person {
 }
 
 impl Team {
+    pub fn default() -> Rc<Team> {
+        Rc::new(Team {
+            _id: "?".to_string(),
+            name: "?".to_string(),
+            members: RefCell::new(vec!()),
+        })
+    }
     pub fn new(name: &str) -> Team {
         Team {
             _id: Uuid::new_v4().to_string(),
@@ -63,7 +70,7 @@ impl Team {
                 return
             }
         }
-        *member.team.borrow_mut() = Option::Some(Rc::downgrade(self));
+        *member.team.borrow_mut() = Rc::downgrade(self);
         self.members.borrow_mut().push(member);
     }
 }
@@ -89,6 +96,6 @@ fn main() {
     p.set_age(44);
     p.set_metier("cyclist");
     p.print_person();
-    println!("");
+    println!();
     team.print_team();
 }
