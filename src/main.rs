@@ -23,29 +23,17 @@ impl Member {
             team: RefCell::new(Weak::new()),
         })
     }
-    fn print(&self) {
-        println!("{:?} from team {}", self, self.team.borrow().upgrade().unwrap_or(Team::default()).name);
-    }
 }
 impl fmt::Display for Member  {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(team) = self.team.borrow().upgrade() {
             write!(f, "{:?} from team {}", self, team.name)
         } else {
-            write!(f, "{:?} has NO TEAM ASSIGNED", self /*default name or whatever*/)
-            // or even
-            // Ok(())
+            write!(f, "{:?} has NO TEAM ASSIGNED", self)
         }
     }
 }
 impl Team {
-    pub fn default() -> Rc<Team> {
-        Rc::new(Team {
-            _id: "?".to_string(),
-            name: "?".to_string(),
-            members: RefCell::new(vec!()),
-        })
-    }
     pub fn new(name: &str) -> Rc<Team> {
         Rc::new(Team {
             _id: Uuid::new_v4().to_string(),
