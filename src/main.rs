@@ -77,19 +77,17 @@ impl Team {
         })
     }
     fn add_member(self: &Rc<Self>, member: Rc<Person>) {
-        for m in self.members.borrow().iter() {
-            if m._id == member._id {
-                //already team member -> exit and don't add again
-                return
-            }
+        if let Some(_) = self.members.borrow().iter().find(|m| m._id == member._id) {
+            //already team member -> exit and don't add again
+            return
         }
         *member.team.borrow_mut() = Rc::downgrade(self);
         self.members.borrow_mut().push(member);
     }
     fn find_member_by_metier(&self, metier: &str) -> Option<Rc<Person>> {
         if let Some(c) = self.members.borrow().iter().find(|m|
-                m.metier.borrow().to_string().cmp(&metier.to_string()) == Equal && m.active.get() == true
-            ) {
+            m.metier.borrow().to_string().cmp(&metier.to_string()) == Equal && m.active.get() == true
+        ) {
             Some(Rc::clone(c))
         }
         else {
@@ -97,23 +95,30 @@ impl Team {
         }
     }
     fn find_member_by_name(&self, name: &str) -> Option<Rc<Person>> {
-        if let Some(c) = self.members.borrow().iter().find(
-            |m| m.name.cmp(&name.to_string()) == Equal && m.active.get() == true) {
+        if let Some(c) = self.members.borrow().iter().find(|m|
+            m.name.cmp(&name.to_string()) == Equal && m.active.get() == true
+        ) {
             Some(Rc::clone(c))
         }
         else {
             Option::None
         }
     }
-    fn remove_member_by_name(&self, name: &str)  {
-        self.members.borrow_mut().retain(|m| m.name.cmp(&name.to_string()) != Equal)
+    fn remove_member_by_name(&self, name: &str) -> bool {
+        if self.deactivate_member_by_name(name) {
+            self.members.borrow_mut().retain(|m| m.name.cmp(&name.to_string()) != Equal);
+            return true;
+        }
+        false
     }
-    fn deactivate_member_by_name(&self, name: &str) {
+    fn deactivate_member_by_name(&self, name: &str) -> bool {
         if let Some(c) = self.find_member_by_name(name) {
             if !c.is_deputy() {
                 c.active.set(false);
+                return true;
             }
         }
+        false
     }
 }
 impl fmt::Display for Team  {
@@ -125,10 +130,10 @@ fn main() {
     let d = Person::new ("mccarthy","boss", 60, None);
     let p = Person::new ("employee","writer", 33, Some(Rc::clone(&d)));
     let d1 = Person::new ("bilbo","master", 26, None);
-    let u = Person::new ("frodo","blogger", 19, Some(Rc::clone(&d1)));
+    let p1 = Person::new ("frodo","blogger", 19, Some(Rc::clone(&d1)));
     let team = Team::new("buddies");
     team.add_member(Rc::clone(&d1));
-    team.add_member(Rc::clone(&u));
+    team.add_member(Rc::clone(&p1));
     team.add_member(Rc::clone(&d));
     team.add_member(Rc::clone(&p));
     p.set_metier("programmer");
