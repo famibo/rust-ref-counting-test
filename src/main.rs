@@ -45,6 +45,19 @@ impl Person {
     fn set_deputy(&self, deputy: Rc<Person>) {
         *self.deputy.borrow_mut() = Option::Some(deputy);
     }
+    fn is_deputy(&self) -> bool {
+        if let Some(team) = self.team.borrow().upgrade() {
+            if let Some(c) = team.members.borrow().iter().find(|m|
+                match m.deputy.borrow().as_ref() {
+                    Some(deputy) => deputy._id == self._id,
+                    None => false,
+                }
+            ) {
+                return true;
+            }
+        }
+        false
+    }
 }
 impl fmt::Display for Person  {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -74,8 +87,7 @@ impl Team {
         self.members.borrow_mut().push(member);
     }
     fn find_member_by_metier(&self, metier: &str) -> Option<Rc<Person>> {
-        if let Some(c) = self.members.borrow().iter().find(
-            |m|
+        if let Some(c) = self.members.borrow().iter().find(|m|
                 m.metier.borrow().to_string().cmp(&metier.to_string()) == Equal && m.active.get() == true
             ) {
             Some(Rc::clone(c))
@@ -98,7 +110,9 @@ impl Team {
     }
     fn deactivate_member_by_name(&self, name: &str) {
         if let Some(c) = self.find_member_by_name(name) {
-            c.active.set(false);
+            if !c.is_deputy() {
+                c.active.set(false);
+            }
         }
     }
 }
@@ -110,7 +124,11 @@ impl fmt::Display for Team  {
 fn main() {
     let d = Person::new ("mccarthy","boss", 60, None);
     let p = Person::new ("employee","writer", 33, Some(Rc::clone(&d)));
+    let d1 = Person::new ("bilbo","master", 26, None);
+    let u = Person::new ("frodo","blogger", 19, Some(Rc::clone(&d1)));
     let team = Team::new("buddies");
+    team.add_member(Rc::clone(&d1));
+    team.add_member(Rc::clone(&u));
     team.add_member(Rc::clone(&d));
     team.add_member(Rc::clone(&p));
     p.set_metier("programmer");
@@ -121,8 +139,8 @@ fn main() {
     println!();
     println!("{}", team);
     println!();
-    //team.deactivate_member_by_name("employee");
-    if let Some(c) = team.find_member_by_metier("cyclist") {
+    team.deactivate_member_by_name("mccarthy");
+    if let Some(c) = team.find_member_by_metier("boss") {
         println!("Found {}", c);
     }
     println!();
