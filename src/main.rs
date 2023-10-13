@@ -47,7 +47,7 @@ impl Person {
     }
     fn is_deputy(&self) -> bool {
         if let Some(team) = self.team.borrow().upgrade() {
-            if let Some(c) = team.members.borrow().iter().find(|m|
+            if let Some(_) = team.members.borrow().iter().find(|m|
                 match m.deputy.borrow().as_ref() {
                     Some(deputy) => deputy._id == self._id,
                     None => false,
