@@ -4,14 +4,22 @@ use std::rc::{Rc, Weak};
 use std::fmt;
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Job {
+    Boss,
+    Writer,
+    Blogger,
+    Developer,
+    Cyclist
+}
 #[derive(Debug)]
 struct Person {
     _id: String,
     name: String,
     active: Cell<bool>,
-    metier: RefCell<Rc<String>>,
     age: Cell<i32>,
-    history: RefCell<Vec<Rc<String>>>,
+    job: Cell<Job>,
+    job_history: RefCell<Vec<Job>>,
     deputy: RefCell<Option<Rc<Person>>>,
     team: RefCell<Weak<Team>>,
 }
@@ -23,21 +31,21 @@ struct Team {
 }
 
 impl Person {
-    pub fn new(name: &str, metier: &str, age: i32, deputy: Option<Rc<Person>>) -> Rc<Person> {
+    pub fn new(name: &str, job: Job, age: i32, deputy: Option<Rc<Person>>) -> Rc<Person> {
         Rc::new( Person {
             _id: Uuid::new_v4().to_string(),
             name: name.to_string(),
             active: Cell::new(true),
-            metier: RefCell::new(Rc::new(metier.to_string())),
+            job: Cell::new(job),
             age: Cell::new(age),
-            history: RefCell::new(vec!()),
+            job_history: RefCell::new(vec!()),
             deputy: RefCell::new(deputy),
             team: RefCell::new(Weak::new()),
         })
     }
-    fn set_metier(&self, metier: &str) {
-        self.history.borrow_mut().push(Rc::clone(&self.metier.borrow()));
-        *self.metier.borrow_mut() = Rc::new(metier.to_string());
+    fn set_job(&self, job: Job) {
+        self.job_history.borrow_mut().push(self.job.get());
+        self.job.set(job);
     }
     fn set_age(&self, age: i32) {
         self.age.set(age);
@@ -57,6 +65,14 @@ impl Person {
             }
         }
         false
+    }
+    fn has_job(self: &Rc<Self>, job: Job) -> Option<Rc<Person>> {
+        if self.job.get() == job {
+            Some(Rc::clone(self))
+        }
+        else {
+            None
+        }
     }
 }
 impl fmt::Display for Person  {
@@ -84,15 +100,8 @@ impl Team {
         *member.team.borrow_mut() = Rc::downgrade(self);
         self.members.borrow_mut().push(member);
     }
-    fn find_member_by_metier(&self, metier: &str) -> Option<Rc<Person>> {
-        if let Some(c) = self.members.borrow().iter().find(|m|
-            m.metier.borrow().to_string().cmp(&metier.to_string()) == Equal && m.active.get() == true
-        ) {
-            Some(Rc::clone(c))
-        }
-        else {
-            Option::None
-        }
+    fn find_members_by_job(&self, job: Job) -> Vec<Rc<Person>> {
+        return self.members.borrow().iter().filter_map(|m| m.has_job(job)).collect::<Vec<Rc<Person>>>();
     }
     fn find_member_by_name(&self, name: &str) -> Option<Rc<Person>> {
         if let Some(c) = self.members.borrow().iter().find(|m|
@@ -126,28 +135,31 @@ impl fmt::Display for Team  {
         write!(f, "{:?}", self)
     }
 }
+
 fn main() {
-    let d = Person::new ("mccarthy","boss", 60, None);
-    let p = Person::new ("employee","writer", 33, Some(Rc::clone(&d)));
-    let d1 = Person::new ("bilbo","master", 26, None);
-    let p1 = Person::new ("frodo","blogger", 19, Some(Rc::clone(&d1)));
+    let d = Person::new ("mccarthy",Job::Boss, 60, None);
+    let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+    let d1 = Person::new ("bilbo",Job::Boss, 26, None);
+    let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
     let team = Team::new("buddies");
     team.add_member(Rc::clone(&d1));
     team.add_member(Rc::clone(&p1));
     team.add_member(Rc::clone(&d));
     team.add_member(Rc::clone(&p));
-    p.set_metier("programmer");
+    p.set_job(Job::Developer);
     p.set_age(44);
-    p.set_metier("cyclist");
+    p.set_job(Job::Cyclist);
     println!("{}", d);
     println!("{}", p);
     println!();
     println!("{}", team);
     println!();
     team.deactivate_member_by_name("mccarthy");
-    if let Some(c) = team.find_member_by_metier("boss") {
+    if let Some(c) = team.find_member_by_name("mccarthy") {
         println!("Found {}", c);
     }
     println!();
     println!("{}", team);
+    let x = team.find_members_by_job(Job::Cyclist);
+    println!("Found {:?}", x);
 }
