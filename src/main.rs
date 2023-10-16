@@ -184,7 +184,7 @@ mod tests {
         assert_eq!(y.unwrap().is_deputy(), true);
         let z = team.find_member_by_name("frodo");
         assert!(z.is_some());
-        assert_eq!(z.unwrap().has_job(Job::Blogger).unwrap().name, "frodo");
+        assert_eq!(z.unwrap().has_job(Job::Blogger).unwrap().job.get(), Job::Blogger);
     }
     #[test]
     fn test_find_member_by_name() {
@@ -217,6 +217,7 @@ mod tests {
         let x = team.find_members_by_job(Job::Cyclist);
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].name, "employee");
+        assert_eq!(x[0].job_history.borrow().len(), 2);
     }
     #[test]
     fn test_deactivate_by_name_positive_test() {
