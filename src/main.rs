@@ -13,26 +13,26 @@ enum Job {
     Cyclist
 }
 #[derive(Debug)]
-struct Person {
+struct Member {
     _id: String,
     name: String,
     active: Cell<bool>,
     age: Cell<i32>,
     job: Cell<Job>,
     job_history: RefCell<Vec<Job>>,
-    deputy: RefCell<Option<Rc<Person>>>,
+    deputy: RefCell<Option<Rc<Member>>>,
     team: RefCell<Weak<Team>>,
 }
 #[derive(Debug)]
 struct Team {
     _id: String,
     name: String,
-    members: RefCell<Vec<Rc<Person>>>,
+    members: RefCell<Vec<Rc<Member>>>,
 }
 
-impl Person {
-    pub fn new(name: &str, job: Job, age: i32, deputy: Option<Rc<Person>>) -> Rc<Person> {
-        Rc::new( Person {
+impl Member {
+    pub fn new(name: &str, job: Job, age: i32, deputy: Option<Rc<Member>>) -> Rc<Member> {
+        Rc::new( Member {
             _id: Uuid::new_v4().to_string(),
             name: name.to_string(),
             active: Cell::new(true),
@@ -50,7 +50,7 @@ impl Person {
     fn set_age(&self, age: i32) {
         self.age.set(age);
     }
-    fn set_deputy(&self, deputy: Rc<Person>) {
+    fn set_deputy(&self, deputy: Rc<Member>) {
         *self.deputy.borrow_mut() = Option::Some(deputy);
     }
     fn is_deputy(&self) -> bool {
@@ -66,7 +66,7 @@ impl Person {
         }
         false
     }
-    fn has_job(self: &Rc<Self>, job: Job) -> Option<Rc<Person>> {
+    fn has_job(self: &Rc<Self>, job: Job) -> Option<Rc<Member>> {
         if self.job.get() == job {
             Some(Rc::clone(self))
         }
@@ -75,7 +75,7 @@ impl Person {
         }
     }
 }
-impl fmt::Display for Person  {
+impl fmt::Display for Member  {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(team) = self.team.borrow().upgrade() {
             write!(f, "{:?} from team {}", self, team.name)
@@ -92,7 +92,7 @@ impl Team {
             members: RefCell::new(vec!()),
         })
     }
-    fn add_member(self: &Rc<Self>, member: Rc<Person>) {
+    fn add_member(self: &Rc<Self>, member: Rc<Member>) {
         if let Some(_) = self.members.borrow().iter().find(|m| m._id == member._id) {
             //already team member -> exit and don't add again
             return
@@ -100,10 +100,10 @@ impl Team {
         *member.team.borrow_mut() = Rc::downgrade(self);
         self.members.borrow_mut().push(member);
     }
-    fn find_members_by_job(&self, job: Job) -> Vec<Rc<Person>> {
-        return self.members.borrow().iter().filter_map(|m| m.has_job(job)).collect::<Vec<Rc<Person>>>();
+    fn find_members_by_job(&self, job: Job) -> Vec<Rc<Member>> {
+        return self.members.borrow().iter().filter_map(|m| m.has_job(job)).collect::<Vec<Rc<Member>>>();
     }
-    fn find_member_by_name(&self, name: &str) -> Option<Rc<Person>> {
+    fn find_member_by_name(&self, name: &str) -> Option<Rc<Member>> {
         if let Some(c) = self.members.borrow().iter().find(|m|
             m.name.cmp(&name.to_string()) == Equal && m.active.get() == true
         ) {
@@ -137,10 +137,10 @@ impl fmt::Display for Team  {
 }
 
 fn main() {
-    let d = Person::new ("mccarthy",Job::Boss, 60, None);
-    let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-    let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-    let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+    let d = Member::new ("mccarthy",Job::Boss, 60, None);
+    let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+    let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+    let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
     let team = Team::new("buddies");
     team.add_member(Rc::clone(&d1));
     team.add_member(Rc::clone(&p1));
@@ -169,9 +169,9 @@ mod tests {
     use super::*;
     #[test]
     fn test_add_member() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let t = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let t = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d));
         team.add_member(Rc::clone(&p));
@@ -188,10 +188,10 @@ mod tests {
     }
     #[test]
     fn test_find_member_by_name() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-        let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+        let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d1));
         team.add_member(Rc::clone(&p1));
@@ -203,10 +203,10 @@ mod tests {
     }
     #[test]
     fn test_find_members_by_job() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-        let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+        let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d1));
         team.add_member(Rc::clone(&p1));
@@ -221,10 +221,10 @@ mod tests {
     }
     #[test]
     fn test_deactivate_by_name_positive_test() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-        let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+        let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d1));
         team.add_member(Rc::clone(&p1));
@@ -236,10 +236,10 @@ mod tests {
     }
     #[test]
     fn test_deactivate_by_name_negative_test() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-        let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+        let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d1));
         team.add_member(Rc::clone(&p1));
@@ -251,10 +251,10 @@ mod tests {
     }
     #[test]
     fn test_remove_by_name_positive_test() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-        let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+        let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d1));
         team.add_member(Rc::clone(&p1));
@@ -266,10 +266,10 @@ mod tests {
     }
     #[test]
     fn test_remove_by_name_negative_test() {
-        let d = Person::new ("mccarthy",Job::Boss, 60, None);
-        let p = Person::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
-        let d1 = Person::new ("bilbo",Job::Boss, 26, None);
-        let p1 = Person::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let d1 = Member::new ("bilbo",Job::Boss, 26, None);
+        let p1 = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d1)));
         let team = Team::new("buddies");
         team.add_member(Rc::clone(&d1));
         team.add_member(Rc::clone(&p1));
