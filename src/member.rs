@@ -80,3 +80,78 @@ impl fmt::Display for Member  {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_is_deputy() {
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let t = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d)));
+        let team = Team::new("buddies");
+        team.add_member(Rc::clone(&d));
+        team.add_member(Rc::clone(&p));
+        team.add_member(Rc::clone(&t));
+        let x = team.find_member_by_name("mccarthy");
+        assert!(x.is_some());
+        assert_eq!(x.unwrap().is_deputy(), true);
+        let y = team.find_member_by_name("frodo");
+        assert!(y.is_some());
+        assert_eq!(y.unwrap().is_deputy(), false);
+    }
+    #[test]
+    fn test_set_deputy() {
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("donovan",Job::Boss, 33, None);
+        let t = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d)));
+        let team = Team::new("buddies");
+        team.add_member(Rc::clone(&d));
+        team.add_member(Rc::clone(&p));
+        team.add_member(Rc::clone(&t));
+        let x = team.find_member_by_name("frodo");
+        assert!(x.is_some());
+        assert_eq!(x.unwrap().deputy.borrow().as_ref().unwrap()._id, d._id);
+        t.set_deputy(Rc::clone(&p));
+        let y = team.find_member_by_name("frodo");
+        assert!(y.is_some());
+        assert_eq!(y.unwrap().deputy.borrow().as_ref().unwrap()._id, p._id);
+    }
+    #[test]
+    fn test_has_job() {
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let t = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&d)));
+        let team = Team::new("buddies");
+        team.add_member(Rc::clone(&d));
+        team.add_member(Rc::clone(&p));
+        team.add_member(Rc::clone(&t));
+        let x = team.find_member_by_name("mccarthy");
+        assert!(x.is_some());
+        assert_eq!(x.unwrap().has_job(Job::Boss).unwrap().job.get(), Job::Boss);
+        let y = team.find_member_by_name("frodo");
+        assert!(y.is_some());
+        assert_eq!(y.unwrap().has_job(Job::Blogger).unwrap().job.get(), Job::Blogger);
+    }
+    #[test]
+    fn test_set_job() {
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
+        let team = Team::new("buddies");
+        team.add_member(Rc::clone(&d));
+        team.add_member(Rc::clone(&p));
+        let x = team.find_member_by_name("employee");
+        assert!(x.is_some());
+        assert_eq!(x.unwrap().has_job(Job::Writer).unwrap().job.get(), Job::Writer);
+        p.set_job(Job::Blogger);
+        let y = team.find_member_by_name("employee");
+        assert!(y.is_some());
+        assert_eq!(y.unwrap().has_job(Job::Blogger).unwrap().job.get(), Job::Blogger);
+        let z = team.find_member_by_name("employee");
+        assert!(z.is_some());
+        let member = z.unwrap();
+        let job_history = member.job_history.borrow();
+        assert_eq!(job_history.len(), 1);
+        assert_eq!(job_history[0], Job::Writer);
+    }
+}

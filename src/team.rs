@@ -82,12 +82,6 @@ mod tests {
         let x = team.find_member_by_name("employee");
         assert!(x.is_some());
         assert_eq!(x.unwrap().team.borrow().upgrade().unwrap()._id, team.get_id()); //team._id would work as well
-        let y = team.find_member_by_name("mccarthy");
-        assert!(y.is_some());
-        assert_eq!(y.unwrap().is_deputy(), true);
-        let z = team.find_member_by_name("frodo");
-        assert!(z.is_some());
-        assert_eq!(z.unwrap().has_job(Job::Blogger).unwrap().job.get(), Job::Blogger);
     }
     #[test]
     fn test_find_member_by_name() {
