@@ -192,4 +192,26 @@ mod tests {
         let x = team.find_member_by_name("mccarthy");
         assert!(x.is_some());
     }
+    #[test]
+    fn test_deputy_chaining_remove_by_name_positive_test() {
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("donovan",Job::Boss, 33, Some(Rc::clone(&d)));
+        let t = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&p)));
+        let team = Team::new("buddies");
+        team.add_member(Rc::clone(&d));
+        team.add_member(Rc::clone(&p));
+        team.add_member(Rc::clone(&t));
+        team.remove_member_by_name("frodo");
+        let z = team.find_member_by_name("frodo");
+        assert!(z.is_none());
+        assert_eq!(team.members.borrow().len(), 2);
+        team.remove_member_by_name("donovan");
+        let y = team.find_member_by_name("donovan");
+        assert!(y.is_none());
+        assert_eq!(team.members.borrow().len(), 1);
+        team.remove_member_by_name("mccarthy");
+        let x = team.find_member_by_name("mccarthy");
+        assert!(x.is_none());
+        assert_eq!(team.members.borrow().len(), 0);
+    }
 }
