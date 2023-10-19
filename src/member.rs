@@ -85,6 +85,23 @@ impl fmt::Display for Member  {
 mod tests {
     use super::*;
     #[test]
+    fn test_deputy_chaining() {
+        let d = Member::new ("mccarthy",Job::Boss, 60, None);
+        let p = Member::new ("donovan",Job::Boss, 33, Some(Rc::clone(&d)));
+        let t = Member::new ("frodo",Job::Blogger, 19, Some(Rc::clone(&p)));
+        let team = Team::new("buddies");
+        team.add_member(Rc::clone(&d));
+        team.add_member(Rc::clone(&p));
+        team.add_member(Rc::clone(&t));
+        let x = team.find_member_by_name("frodo");
+        assert!(x.is_some());
+        let binding = x.unwrap();
+        let binding = binding.deputy.borrow();
+        let deputy = binding.as_ref().unwrap();
+        assert_eq!(deputy.name, p.name);
+        assert_eq!(deputy.deputy.borrow().as_ref().unwrap().name, d.name);
+    }
+    #[test]
     fn test_is_deputy() {
         let d = Member::new ("mccarthy",Job::Boss, 60, None);
         let p = Member::new ("employee",Job::Writer, 33, Some(Rc::clone(&d)));
